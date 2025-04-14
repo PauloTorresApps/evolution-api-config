@@ -1,0 +1,118 @@
+services:
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./src/public:/usr/share/nginx/html
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./certificado:/etc/nginx/ssl
+    ports:
+      - 80:80
+      - 443:443
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 512M
+      restart_policy:
+        condition: on-failure
+    networks:
+      - evolution-net
+    depends_on:
+      - evolution-api
+
+  evolution-api:
+    image: atendai/evolution-api
+    networks:
+      - evolution-net
+    ports:
+      - 8080:8080
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 512M
+      restart_policy:
+        condition: on-failure
+    volumes:
+      - evolution_instances:/evolution/instances
+    environment:
+      - SERVER_TYPE=http
+      - SERVER_PORT=8080
+      - SERVER_URL=https://mensageiro.test/evolution
+      - WEBHOOK_URL=http://n8n:5678/webhook-test
+      - AUTHENTICATION_API_KEY=testes
+      - AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES=true
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_ENABLED=true
+      - DATABASE_CONNECTION_URI=postgresql://postgres:PASSWORD@postgres:5432/evolution?schema=public
+      - DATABASE_CONNECTION_CLIENT_NAME=evolution_exchange
+      - DATABASE_SAVE_DATA_INSTANCE=true
+      - DATABASE_SAVE_DATA_NEW_MESSAGE=true
+      - DATABASE_SAVE_DATA_CONTACTS=true
+      - DATABASE_SAVE_DATA_CHATS=true
+      - DATABASE_SAVE_DATA_LABELS=true
+      - DATABASE_SAVE_DATA_HISTORIC=true
+      - DATABASE_SAVE_MESSAGE_UPDATE=true
+      - CACHE_REDIS_ENABLED=true
+      - CACHE_REDIS_URI=redis://evo_redis:6379/1
+      - CACHE_REDIS_PREFIX_KEY=evolution_v2
+      - CACHE_REDIS_SAVE_INSTANCES=false
+      - CACHE_LOCAL_ENABLED=false
+    depends_on:
+      - postgres
+
+  redis:
+      image: redis:latest
+      networks:
+        - evolution-net
+      command: redis-server --port 6379 --appendonly yes
+      volumes:
+        - evolution_redis_dev:/data
+      ports:
+        - 127.0.0.1:6379:6379
+      deploy:
+        replicas: 3
+        resources:
+          limits:
+            cpus: '0.2'
+            memory: 1024M
+        restart_policy:
+          condition: on-failure
+      depends_on:
+        - postgres
+
+  postgres:
+    image: postgres:15
+    networks:
+      - evolution-net
+    command: ["postgres", "-c", "max_connections=1000"]
+    environment:
+      - POSTGRES_PASSWORD=PASSWORD
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: '0.33'
+          memory: 4096M
+      restart_policy:
+        condition: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+networks:
+  evolution-net:
+    external: true
+volumes:
+  evolution_instances:
+  evolution_redis_dev:
+  postgres_data_dev:

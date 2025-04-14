@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Central de Monitoramento</title>
+    <style>
+        :root {
+            --primary: #1976D2;
+            --secondary: #FF9800;
+            --dark: #263238;
+            --light: #ECEFF1;
+            --danger: #E53935;
+            --success: #43A047;
+            --warning: #FFB300;
+            --info: #039BE5;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        header {
+            background-color: var(--dark);
+            color: white;
+            padding: 1rem 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo span {
+            color: var(--secondary);
+        }
+        
+        nav ul {
+            display: flex;
+            list-style: none;
+        }
+        
+        nav ul li {
+            margin-left: 1.5rem;
+        }
+        
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            transition: color 0.3s;
+            font-weight: 500;
+        }
+        
+        nav ul li a:hover {
+            color: var(--secondary);
+        }
+        
+        .hero {
+            background: linear-gradient(135deg, var(--primary), #0D47A1);
+            color: white;
+            padding: 4rem 0;
+            text-align: center;
+        }
+        
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .hero p {
+            font-size: 1.2rem;
+            max-width: 800px;
+            margin: 0 auto 2rem;
+        }
+        
+        .btn {
+            display: inline-block;
+            background-color: var(--secondary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background-color 0.3s;
+            margin: 0 0.5rem;
+        }
+        
+        .btn:hover {
+            background-color: #F57C00;
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid white;
+        }
+        
+        .btn-outline:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .services {
+            padding: 4rem 0;
+        }
+        
+        .section-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .section-title h2 {
+            font-size: 2rem;
+            color: var(--primary);
+            position: relative;
+            display: inline-block;
+        }
+        
+        .section-title h2::after {
+            content: '';
+            position: absolute;
+            width: 60px;
+            height: 3px;
+            background-color: var(--secondary);
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        
+        .service-card {
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s;
+        }
+        
+        .service-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .service-icon {
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .service-icon i {
+            font-size: 3rem;
+        }
+        
+        .service-content {
+            padding: 1.5rem;
+        }
+        
+        .service-content h3 {
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+        
+        .service-content p {
+            margin-bottom: 1.5rem;
+            color: #546E7A;
+        }
+        
+        .status-dashboard {
+            background-color: white;
+            padding: 3rem 0;
+            border-top: 1px solid #E0E0E0;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .status-card {
+            background-color: var(--light);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .status-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .status-active {
+            background-color: var(--success);
+        }
+        
+        .status-info {
+            font-weight: 500;
+        }
+        
+        footer {
+            background-color: var(--dark);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+        }
+        
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+        
+        .footer-links a {
+            color: #B0BEC5;
+            margin: 0 1rem;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .footer-links a:hover {
+            color: white;
+        }
+        
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            nav ul {
+                margin-top: 1rem;
+            }
+            
+            nav ul li {
+                margin: 0 0.5rem;
+            }
+            
+            .hero h1 {
+                font-size: 2rem;
+            }
+            
+            .hero p {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container header-content">
+            <div class="logo">
+                Monitor<span>Hub</span>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#services">Serviços</a></li>
+                    <li><a href="#status">Status</a></li>
+                    <li><a href="#contact">Contato</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero" id="home">
+        <div class="container">
+            <h1>Central de Monitoramento de Aplicações</h1>
+            <p>Monitore sua infraestrutura e aplicações em tempo real com nossa solução completa de observabilidade integrando Prometheus e Grafana.</p>
+            <div>
+                <a href="http://localhost:3000" class="btn">Acessar Grafana</a>
+                <a href="http://localhost:9090" class="btn btn-outline">Acessar Prometheus</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="services" id="services">
+        <div class="container">
+            <div class="section-title">
+                <h2>Nossos Serviços</h2>
+            </div>
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="service-icon" style="background-color: #E53935;">
+                        <img src="/api/placeholder/64/64" alt="Prometheus" />
+                    </div>
+                    <div class="service-content">
+                        <h3>Prometheus</h3>
+                        <p>Sistema de monitoramento e alerta que coleta métricas em tempo real através de HTTP.</p>
+                        <a href="http://localhost:9090" class="btn" style="background-color: #E53935;">Acessar</a>
+                    </div>
+                </div>
+                
+                <div class="service-card">
+                    <div class="service-icon" style="background-color: #FF9800;">
+                        <img src="/api/placeholder/64/64" alt="Grafana" />
+                    </div>
+                    <div class="service-content">
+                        <h3>Grafana</h3>
+                        <p>Plataforma de visualização de dados e monitoramento com painéis interativos.</p>
+                        <a href="http://localhost:3000" class="btn" style="background-color: #FF9800;">Acessar</a>
+                    </div>
+                </div>
+                
+                <div class="service-card">
+                    <div class="service-icon" style="background-color: #43A047;">
+                        <img src="/api/placeholder/64/64" alt="Evolution API" />
+                    </div>
+                    <div class="service-content">
+                        <h3>Evolution API</h3>
+                        <p>API de comunicação para integração de mensagens e serviços.</p>
+                        <a href="http://localhost:8080" class="btn" style="background-color: #43A047;">Acessar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="status-dashboard" id="status">
+        <div class="container">
+            <div class="section-title">
+                <h2>Status dos Serviços</h2>
+            </div>
+            <div class="status-grid">
+                <div class="status-card">
+                    <h3>Prometheus</h3>
+                    <p><span class="status-indicator status-active"></span> <span class="status-info">Online</span></p>
+                </div>
+                
+                <div class="status-card">
+                    <h3>Grafana</h3>
+                    <p><span class="status-indicator status-active"></span> <span class="status-info">Online</span></p>
+                </div>
+                
+                <div class="status-card">
+                    <h3>Evolution API</h3>
+                    <p><span class="status-indicator status-active"></span> <span class="status-info">Online</span></p>
+                </div>
+                
+                <div class="status-card">
+                    <h3>PostgreSQL</h3>
+                    <p><span class="status-indicator status-active"></span> <span class="status-info">Online</span></p>
+                </div>
+                
+                <div class="status-card">
+                    <h3>Redis</h3>
+                    <p><span class="status-indicator status-active"></span> <span class="status-info">Online</span></p>
+                </div>
+                
+                <div class="status-card">
+                    <h3>Nginx</h3>
+                    <p><span class="status-indicator status-active"></span> <span class="status-info">Online</span></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer id="contact">
+        <div class="container">
+            <div class="footer-links">
+                <a href="#">Documentação</a>
+                <a href="#">Suporte</a>
+                <a href="#">GitHub</a>
+                <a href="#">Contato</a>
+            </div>
+            <p>&copy; 2025 MonitorHub - Plataforma de Monitoramento</p>
+        </div>
+    </footer>
+</body>
+</html>
