@@ -1,9 +1,0 @@
-2025/04/11 12:51:34 [emerg] 1#1: host not found in upstream "evolution-grafana-1" in /etc/nginx/nginx.conf:107
-2025/04/11 12:51:34 [emerg] 1#1: duplicate location "/prometheus/" in /etc/nginx/nginx.conf:106
-2025/04/11 12:51:35 [emerg] 1#1: duplicate location "/prometheus/" in /etc/nginx/nginx.conf:106
-2025/04/11 12:51:35 [emerg] 1#1: duplicate location "/prometheus/" in /etc/nginx/nginx.conf:106
-2025/04/11 12:51:36 [emerg] 1#1: duplicate location "/prometheus/" in /etc/nginx/nginx.conf:106
-2025/04/11 12:51:38 [emerg] 1#1: duplicate location "/prometheus/" in /etc/nginx/nginx.conf:106
-2025/04/11 12:51:41 [emerg] 1#1: duplicate location "/prometheus/" in /etc/nginx/nginx.conf:106
-2025/04/11 12:51:48 [emerg] 1#1: duplicate location "/prometheus/" in /etc/nginx/nginx.conf:106
-2025/04/11 12:52:01 [emerg] 1#1: duplicate location "/prometheus/" in /etc/nginx/nginx.conf:106
