@@ -70,6 +70,29 @@ services:
       - "prometheus.port=6379"
       - "prometheus.path=/metrics"
 
+  # --- SERVIÇO REDIS EXPORTER ---
+  redis-exporter:
+    image: oliver006/redis_exporter:latest # Imagem popular para o redis_exporter
+    container_name: redis_exporter
+    # Se o Redis NÃO tiver senha:
+    command: # Define o endereço do Redis para o exporter
+      - '--redis.addr=redis://redis:6379'
+    # Se o Redis TIVER senha (SUA_SENHA_REDIS_AQUI deve ser a mesma do comando do Redis):
+    # command:
+    #  - '--redis.addr=redis://redis:6379'
+    #  - '--redis.password=SUA_SENHA_REDIS_AQUI'
+    # Alternativamente, usando variáveis de ambiente (verifique a documentação da imagem do exporter para suporte):
+    # environment:
+    #   REDIS_ADDR: "redis://redis:6379"
+    #   REDIS_PASSWORD: "SUA_SENHA_REDIS_AQUI" # Se houver senha
+    ports:
+      - "9121:9121" # Porta padrão do redis_exporter
+    networks:
+      - evolution-net
+    depends_on:
+      - redis # Garante que o Redis seja iniciado antes
+    restart: unless-stopped
+
   postgres:
     container_name: postgres
     image: postgres:15
@@ -119,8 +142,7 @@ services:
     networks:
       - evolution-net
     depends_on:
-      - postgres # Garante que o PostgreSQL seja iniciado antes do exporter
-
+      - postgres
 
 
   prometheus:
@@ -142,6 +164,10 @@ services:
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--web.enable-lifecycle'
       - '--web.external-url=https://mensageiro.test/prometheus/'
+    depends_on:
+      - nginx-exporter
+      - postgres-exporter
+      - redis-exporter
 
   grafana:
     image: grafana/grafana:latest
