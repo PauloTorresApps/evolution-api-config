@@ -143,7 +143,54 @@ services:
       - evolution-net
     depends_on:
       - postgres
-
+   # --- SERVIÇO N8N ---
+  
+  n8n:
+    image: n8nio/n8n:latest # Use a imagem oficial e a tag desejada
+    container_name: n8n
+    ports:
+      - "5678:5678" # Porta padrão do n8n. As métricas geralmente são expostas nesta mesma porta.
+    environment:
+      # Habilita o endpoint de métricas para o Prometheus
+      - N8N_METRICS_ENABLED=true
+      - N8N_METRICS=true
+      # Opcional: Se quiser mudar a porta ou caminho das métricas (raramente necessário)
+      - N8N_METRICS_PORT=5678 # (se diferente da porta principal)
+      - N8N_METRICS_PATH="/metrics" # (este é o padrão)
+      # Outras variáveis de ambiente necessárias para o n8n (ex: fuso horário, banco de dados, etc.)
+      - N8N_HOST=n8n
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - N8N_WEBHOOK_URL=${N8N_WEBHOOK_URL}
+      - N8N_WEBHOOK_TEST_URL=http://n8n:5678
+      - N8N_ENDPOINT_WEBHOOK=webhook
+      - N8N_ENDPOINT_WEBHOOK_TEST=webhook-test
+      - N8N_RUNNERS_ENABLED=true
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_USER=${POSTGRES_USER}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_POSTGRESDB_DATABASE=n8n
+      - N8N_PATH=${N8N_PATH}
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://n8n:5678
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+      - N8N_SECURE_COOKIE=false
+      - N8N_CUSTOM_API_CALL_CONTENT_LENGTH_LIMIT=250000
+      - N8N_CUSTOM_API_CALL_TIME_OUT_LIMIT=600000
+      - EXECUTIONS_DATA_SAVE_ON_ERROR=all
+      - EXECUTIONS_DATA_SAVE_ON_SUCCESS=all
+      - EXECUTIONS_DATA_SAVE_ON_PROGRESS=true
+      - EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS=true
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+    volumes:
+      - n8n_data:/home/node/.n8n # Volume para persistir dados do n8n
+    networks:
+      - evolution-net
+    depends_on: # Se o n8n depender do Postgres
+      - postgres
+    restart: unless-stopped
 
   prometheus:
     image: prom/prometheus:latest
@@ -235,6 +282,7 @@ volumes:
   postgres_data_dev:
   grafana_data:
   prometheus-data:
+  n8n_data:
 
 networks:
   evolution-net:
