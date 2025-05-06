@@ -352,20 +352,52 @@ docker node update --label-add postgres-replica=true <NODE-ID-OU-HOSTNAME-2>
 ```
 ### 6. Deploy do stack PostgreSQL
 
-``` 
+```bash
 docker stack deploy -c postgres-swarm-stack.yml postgres
 ```
 
 ### 7. Monitorando o cluster
 Para monitorar o cluster, recomendo configurar o Prometheus e Grafana:
-```
+```bash
 # Crie um diretório para os arquivos de configuração
 mkdir -p monitoring/prometheus monitoring/grafana
 ```
 
+#### Usuário dedicado para monitoramento do postgres
+
+```sql
+-- Crie um usuário dedicado para o exporter
+CREATE USER postgres_exporter WITH PASSWORD 'exporter_password';
+
+-- Conceda permissão para conectar ao banco de dados que você quer monitorar (ex: 'meu_banco')
+-- Se o exporter for monitorar todos os bancos, você pode precisar ajustar ou rodar em cada um.
+-- Geralmente, ele se conecta a um banco específico (pode ser 'postgres' ou o seu principal).
+GRANT CONNECT ON DATABASE seu_banco_de_dados TO postgres_exporter; -- Substitua 'seu_banco_de_dados'
+
+-- Conceda permissões para visualizar estatísticas
+GRANT SELECT ON pg_stat_database TO postgres_exporter;
+GRANT SELECT ON pg_stat_activity TO postgres_exporter;
+GRANT SELECT ON pg_stat_user_tables TO postgres_exporter;
+GRANT SELECT ON pg_stat_user_indexes TO postgres_exporter;
+GRANT SELECT ON pg_stat_bgwriter TO postgres_exporter;
+GRANT SELECT ON pg_stat_database_conflicts TO postgres_exporter;
+-- Para algumas métricas mais detalhadas ou queries customizadas, pode ser necessário mais.
+-- Para versões mais recentes do exporter e para métricas como tamanho de WAL,
+-- pode ser necessário acesso a funções específicas.
+-- Exemplo, se o exporter usar:
+-- GRANT EXECUTE ON FUNCTION pg_ls_waldir() TO postgres_exporter; (ou pg_ls_waldir_nativelib() em versões mais novas)
+-- GRANT EXECUTE ON FUNCTION pg_stat_file(text) TO postgres_exporter;
+-- GRANT pg_monitor TO postgres_exporter; -- PostgreSQL 10+ oferece este role que simplifica muitas permissões.
+
+-- Se você estiver usando PostgreSQL 10 ou superior, o role pg_monitor é recomendado:
+-- GRANT pg_monitor TO postgres_exporter;
+-- Isso já concede a maioria das permissões necessárias.
+-- Verifique a documentação do postgres_exporter para as permissões exatas recomendadas para sua versão.
+```
+
 Crie um arquivo `monitoring-stack.yml` para implantar Prometheus e Grafana:
 #### monitoring-stack.yml
-```
+```yml
 
 version: '3.8'
 
@@ -461,7 +493,7 @@ volumes:
 Crie o arquivo de configuração do Prometheus:
 #### prometheus.yml
 
-```
+```yml
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
@@ -486,7 +518,7 @@ scrape_configs:
 ```
 
 Deploy o stack de monitoramento:
-```
+```bash
 docker stack deploy -c monitoring-stack.yml monitoring
 ```
 

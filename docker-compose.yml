@@ -22,6 +22,20 @@ services:
       - "prometheus.port=80"
       - "prometheus.path=/metrics"
 
+# Serviço Nginx Prometheus Exporter
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:latest # Imagem oficial do exporter
+    container_name: nginx_exporter
+    # ports:
+    #  - "9113:9113" # Descomente se quiser acessar do host: http://localhost:9113/metrics
+    command:
+      - '-nginx.scrape-uri=http://nginx/metrics'
+    networks:
+      - evolution-net
+    depends_on:
+      - nginx
+
+
   evolution-api:
     container_name: evolution_api
     image: atendai/evolution-api
@@ -82,6 +96,32 @@ services:
       - "prometheus.scrape=true"
       - "prometheus.port=5432"
       - "prometheus.path=/metrics"
+
+  # Serviço PostgreSQL Exporter
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:latest # Imagem recomendada
+    container_name: postgres_exporter
+    environment:
+      # String de conexão para o PostgreSQL
+      # Formato: postgresql://usuario:senha@host:porta/banco?sslmode=prefer
+      DATA_SOURCE_NAME: "postgresql://postgres_exporter:exporter_password@postgres:5432/evolution?sslmode=disable"
+      # Ajuste:
+      # - postgres_exporter: usuário que criamos no Passo 1
+      # - exporter_password: senha que definimos para o postgres_exporter
+      # - postgres: nome do serviço do container PostgreSQL definido acima
+      # - 5432: porta padrão do PostgreSQL
+      # - seu_banco_de_dados: o banco ao qual o exporter se conectará
+      # - sslmode=disable: para comunicação interna na rede Docker. Se seu Postgres exigir SSL, ajuste.
+    # A porta 9187 do exporter não precisa ser exposta ao HOST,
+    # a menos que queira acessá-la diretamente para debug.
+    # ports:
+    #  - "9187:9187" # Descomente se quiser acessar do host: http://localhost:9187/metrics
+    networks:
+      - evolution-net
+    depends_on:
+      - postgres # Garante que o PostgreSQL seja iniciado antes do exporter
+
+
 
   prometheus:
     image: prom/prometheus:latest
