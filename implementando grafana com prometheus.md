@@ -1,7 +1,9 @@
-# IMPLEMENTANDO PROMETHEUS COM GRAFANA 
+# IMPLEMENTANDO PROMETHEUS COM GRAFANA
 
 ## Craindo os arquivos de configuração
+
 Primeiro, vamos criar um docker-compose.yml que inclui todos os serviços mencionados e adiciona o Prometheus e Grafana:
+
 ```
 docker-compose.yml
 
@@ -165,7 +167,6 @@ volumes:
   redis-data:
   prometheus-data:
   grafana-data:
-
 ```
 
 Agora, vamos criar a configuração do Prometheus para coletar métricas dos serviços:
@@ -228,7 +229,6 @@ scrape_configs:
         replacement: $1
       - source_labels: [__meta_docker_container_label_com_docker_compose_service]
         target_label: service_name
-
 ```
 
 Agora vamos configurar o NGINX para expor métricas para o Prometheus:
@@ -257,7 +257,6 @@ server {
         root /usr/share/nginx/html;
     }
 }
-
 ```
 
 Agora, vamos configurar a dashboard básica do Grafana para visualizar as métricas:
@@ -277,12 +276,12 @@ datasources:
     basicAuth: false
     isDefault: true
     editable: true
-
-``` 
+```
 
 ## Passo a passo para implementação
 
 ### 1.Crie a estrutura de diretórios
+
 ```
 mkdir -p prometheus grafana/provisioning/datasources nginx/conf.d nginx/html nginx/logs evolution-api-data
 ```
@@ -299,11 +298,13 @@ mkdir -p prometheus grafana/provisioning/datasources nginx/conf.d nginx/html ngi
 - Verifique se a Evolution API disponibiliza um endpoint /metrics. Caso contrário, você pode precisar adicionar um exportador específico para esse serviço.
 
 ### 4.Inicialize os serviços:
+
 ```
 docker-compose up -d
 ```
 
 ### 5.Acessando os serviços
+
 ```
 - Prometheus: http://localhost:9090
 - Grafana: http://localhost:3000 (usuário: admin, senha: admin)
@@ -319,7 +320,6 @@ Para os serviços que não expõem métricas nativamente no formato Prometheus, 
 Para PostgreSQL e Redis, é possível adicionar exportadores específicos:
 
 ```
-
 Adição de Exportadores para PostgresSQL e Redis:
 
 
@@ -360,8 +360,9 @@ postgres-exporter:
 Após acessar o Grafana (http://localhost:3000), você pode:
 
 1. Verificar se a fonte de dados Prometheus está configurada (Configurações > Fontes 2.de dados)
-2. Importar dashboards pré-configurados usando seus IDs:
 
+2. Importar dashboards pré-configurados usando seus IDs:
+   
    - Node Exporter: ID 1860
    - cAdvisor: ID 14282
    - PostgreSQL: ID 9628
