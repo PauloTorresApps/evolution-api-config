@@ -60,3 +60,67 @@ scrape_configs:
         replacement: $1
       - source_labels: [__meta_docker_container_label_com_docker_compose_service]
         target_label: service_name
+
+  # Job para coletar métricas do próprio Blackbox Exporter
+  - job_name: 'blackbox'
+    metrics_path: /metrics # Endpoint padrão do blackbox exporter para suas próprias métricas
+    static_configs:
+      - targets: ['blackbox-exporter:9115'] # 'blackbox-exporter' é o nome do serviço/container do blackbox
+
+  # Job para sondar alvos HTTP usando o módulo http_2xx
+  - job_name: 'blackbox_http'
+    metrics_path: /probe # Endpoint do Blackbox Exporter para sondagem
+    params:
+      module: [http_2xx]  # Qual módulo do blackbox.yml usar
+    static_configs:
+      - targets:
+          - http://prometheus:9090/prometheus    # Alvo 1
+          - http://grafana:3000/grafana    # Alvo 2
+          - http://evolution_api:8080 # Alvo 3
+          - http://redis:9121 # Alvo 4
+          - http://postgres:5432 # Alvo 5
+          - https://nginx:443 # Alvo 6
+          - http://cadvisor:8080 # Alvo 7
+          - http://n8n:5678 # Alvo 8
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115  # O endereço do Blackbox Exporter
+
+  # Job para sondar alvos ICMP (ping) usando o módulo icmp
+  - job_name: 'blackbox_icmp'
+    metrics_path: /probe
+    params:
+      module: [icmp]
+    static_configs:
+      - targets:
+          - 8.8.8.8
+          - 1.1.1.1
+          - host.docker.internal # Se precisar pingar o host Docker de dentro do contêiner
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  - job_name: 'blackbox_postgres'
+    metrics_path: /probe
+    params:
+      module: [tcp_postgres_connect]  # Usa o módulo que acabamos de definir
+    static_configs:
+      - targets:
+          - 'meu-servidor-postgres1.exemplo.com:5432' # Alvo 1 (hostname:porta)
+          - '192.168.1.100:5432'                      # Alvo 2 (IP:porta)
+          # Adicione outros servidores PostgreSQL aqui
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115  # Endereço do seu Blackbox Exporter (nome do serviço/container:porta)

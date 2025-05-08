@@ -1,0 +1,56 @@
+modules:
+  http_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+      valid_status_codes: [] # Aceita qualquer status code por padrão, mas você pode especificar [200, 201] etc.
+      method: GET
+      preferred_ip_protocol: "ip4" # Ou "ip6"
+      # Você pode adicionar mais configurações aqui, como headers, body, TLS config, etc.
+      # tls_config:
+      #   insecure_skip_verify: false
+  
+  http_post_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      method: POST
+      # body: "{\"key\":\"value\"}"
+      # headers:
+      #   Content-Type: "application/json"
+      preferred_ip_protocol: "ip4"
+
+  icmp:
+    prober: icmp
+    timeout: 5s
+    icmp:
+      preferred_ip_protocol: "ip4" # ou "ip6"
+
+  tcp_connect:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      preferred_ip_protocol: "ip4"
+      # tls: false # Mude para true se for testar uma conexão TLS
+      # tls_config:
+      #   insecure_skip_verify: false
+
+  tcp_postgres_connect:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      preferred_ip_protocol: "ip4" # ou "ip6"
+      # query_response: [] # Opcional: se você espera uma resposta específica ao conectar (geralmente não usado para um simples check de porta)
+      # tls: false # PostgreSQL pode usar TLS, se estiver configurado, defina como true e configure tls_config
+      # tls_config:
+      #   insecure_skip_verify: false # Defina como true apenas para testes, não em produção
+
+  dns_query:
+    prober: dns
+    timeout: 5s
+    dns:
+      transport_protocol: "udp" # Ou "tcp"
+      query_name: "google.com"
+      query_type: "A" # Ou MX, CNAME, etc.
+      preferred_ip_protocol: "ip4"

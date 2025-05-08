@@ -154,7 +154,10 @@ services:
       # Habilita o endpoint de métricas para o Prometheus
       - N8N_METRICS_ENABLED=true
       - N8N_METRICS=true
+      - N8N_METRICS_INCLUDE_MESSAGE_EVENT_BUS_METRICS=true
+      - N8N_METRICS_INCLUDE_WORKFLOW_ID_LABEL=true
       - QUEUE_HEALTH_CHECK_ACTIVE=true
+      
       # Opcional: Se quiser mudar a porta ou caminho das métricas (raramente necessário)
       - N8N_METRICS_PORT=5678 # (se diferente da porta principal)
       - N8N_METRICS_PATH="/metrics" # (este é o padrão)
@@ -278,6 +281,19 @@ services:
       - "prometheus.scrape=true"
       - "prometheus.port=9100"
       - "prometheus.path=/metrics"
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:latest
+    container_name: blackbox-exporter
+    volumes:
+      - ./blackbox.yml:/config/blackbox.yml
+    command:
+      - '--config.file=/config/blackbox.yml'
+    ports:
+      - "9115:9115"
+    networks:
+      - evolution-net
+    restart: unless-stopped
 
 volumes:
   evolution_instances:
