@@ -8,10 +8,6 @@ scrape_configs:
       - targets: ['prometheus:9090']
     metrics_path: 'prometheus/metrics'
 
-  - job_name: 'evolution-api'
-    static_configs:
-      - targets: ['evolution-api:8080']
-
   - job_name: 'n8n'
     # O caminho padrão das métricas do n8n é /metrics
     metrics_path: /metrics
@@ -124,3 +120,8 @@ scrape_configs:
         target_label: instance
       - target_label: __address__
         replacement: blackbox-exporter:9115  # Endereço do seu Blackbox Exporter (nome do serviço/container:porta)
+
+  - job_name: 'pushgateway' # Job para raspar o Pushgateway
+    honor_labels: true # Importante para manter os labels originais enviados pela Evolution API
+    static_configs:
+      - targets: ['pushgateway:9091']

@@ -49,10 +49,6 @@ services:
     volumes:
       - evolution_instances:/evolution/instances
       - ./evolution-api-data:/app/data
-    labels:
-      - "prometheus.scrape=true"
-      - "prometheus.port=8080"
-      - "prometheus.path=/metrics"
 
   redis:
       image: redis:latest
@@ -221,6 +217,15 @@ services:
       - nginx-exporter
       - postgres-exporter
       - redis-exporter
+
+  pushgateway:
+    image: prom/pushgateway
+    container_name: pushgateway
+    ports:
+      - "9091:9091"
+    restart: unless-stopped
+    networks:
+      - evolution-net
 
   grafana:
     image: grafana/grafana:latest
