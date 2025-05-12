@@ -161,6 +161,7 @@ services:
       # Opcional: Se quiser mudar a porta ou caminho das métricas (raramente necessário)
       - N8N_METRICS_PORT=5678 # (se diferente da porta principal)
       - N8N_METRICS_PATH="/metrics" # (este é o padrão)
+      - N8N_METRICS_INCLUDE_WORKFLOW_METRICS=true
       # Outras variáveis de ambiente necessárias para o n8n (ex: fuso horário, banco de dados, etc.)
       - N8N_HOST=n8n
       - N8N_PORT=5678
