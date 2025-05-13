@@ -8,6 +8,13 @@ scrape_configs:
       - targets: ['prometheus:9090']
     metrics_path: 'prometheus/metrics'
 
+  - job_name: 'grafana'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['grafana:3000']
+    metrics_path: 'grafana/metrics'
+
+
   - job_name: 'n8n'
     # O caminho padrão das métricas do n8n é /metrics
     metrics_path: /metrics
