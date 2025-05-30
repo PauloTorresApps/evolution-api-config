@@ -1,0 +1,69 @@
+// 1. Defina suas regras de relabeling em um componente 'prometheus.relabel'
+prometheus.relabel "docker_log_rules" {
+  forward_to = [] // Tenta lista vazia para o forward_to
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container_name"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_log_stream"]
+    target_label  = "logstream"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service_name"
+  }
+}
+
+// Configuração para coletar logs do Docker
+discovery.docker "docker_containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+// Recebe os logs dos containers descobertos
+loki.source.docker "app_logs" {
+  host = "unix:///var/run/docker.sock"
+  targets = discovery.docker.docker_containers.targets
+  forward_to = [loki.process.app_json.receiver]
+
+  labels = {
+    "job" = "node-app-logs",
+  }
+
+  relabel_rules = prometheus.relabel.docker_log_rules.rules
+}
+
+// Processa os logs JSON
+loki.process "app_json" {
+  stage.json {
+    expressions = {
+      "level"    = "level",
+      "time"     = "time",
+      "msg"      = "msg || message",
+      "hostname" = "hostname",
+      "pid"      = "pid",
+      "path"     = "path",
+      "method"   = "method",
+    }
+  }
+
+  stage.timestamp {
+    source = "time"
+    format = "unix_ms"
+  }
+
+  stage.output {
+    source = "msg"
+  }
+
+  forward_to = [loki.write.loki_destination.receiver]
+}
+
+// Define o destino para onde os logs serão enviados (Loki)
+loki.write "loki_destination" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
