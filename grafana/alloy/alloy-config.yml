@@ -1,0 +1,120 @@
+server:
+  log_level: info
+  http_listen_port: 12345 # Porta para o Alloy se necessário
+
+// Configuração para coletar logs do Docker (substitua pela configuração mais recente se necessário)
+discovery.docker "docker_containers" {
+  host = "unix:///var/run/docker.sock" // Caminho para o socket do Docker
+  // Filtre os containers que você deseja monitorar, se necessário
+  // Pode ser por label, nome, etc.
+  // Exemplo:
+  // docker_filter {
+  //   name = "container_name_pattern"
+  //   label {
+  //     key = "collect_logs"
+  //     value = "true"
+  //   }
+  // }
+}
+
+// Recebe os logs dos containers descobertos
+loki.source.docker "app_logs" {
+  host = "unix:///var/run/docker.sock"
+  targets = discovery.docker.docker_containers.targets
+  forward_to = [loki.process.app_json.receiver] // Envia para o estágio de processamento
+
+  // Adiciona labels aos logs, útil para filtragem no Grafana/Loki
+  labels = {
+    "job" = "node-app-logs",
+  }
+
+  // Recomenda-se adicionar labels do próprio container
+  relabel_configs = [
+    {
+      source_labels = ["__meta_docker_container_name"],
+      regex = "/(.*)", // Remove a barra inicial do nome do container
+      target_label = "container_name",
+    },
+    {
+      source_labels = ["__meta_docker_container_log_stream"],
+      target_label = "logstream",
+    },
+    // Adicione outras labels que desejar, como nome da imagem, etc.
+    {
+      source_labels = ["__meta_docker_container_label_com_docker_compose_service"],
+      target_label = "service_name",
+    }
+  ]
+}
+
+// Processa os logs JSON
+loki.process "app_json" {
+  // Estágio para parsear a linha de log como JSON
+  stage.json {
+    expressions = {
+      // Extrai todos os campos do JSON para labels temporárias
+      // Ou especifique campos:
+      // "level" = "level",
+      // "message" = "message",
+      // "path" = "path",
+      // "method" = "method",
+      // "time" = "time", // O Pino já inclui o timestamp
+      // "pid" = "pid",
+      // "hostname" = "hostname"
+    }
+    // Se os campos extraídos devem ser adicionados como labels no Loki
+    // Cuidado para não criar muitas labels de alta cardinalidade
+    // labels = {
+    //   "level" = "", // Deixa o campo "level" como label
+    // }
+  }
+
+  // Estágio para extrair o timestamp do log do Pino, se necessário e não for pego automaticamente
+  // stage.timestamp {
+  //   source = "time" // Nome do campo JSON que contém o timestamp
+  //   format = "unix_ms" // Formato do timestamp do Pino (milissegundos)
+  // }
+
+  // Estágio para definir o conteúdo principal do log
+  // stage.output {
+  //   source = "message" // Define o campo 'message' como a linha principal do log
+  // }
+
+  // Estágio opcional para criar métricas a partir dos logs
+  // stage.metrics {
+  //   // Exemplo: contar logs por nível
+  //   "log_level_count" = {
+  //     type = "Counter",
+  //     description = "Count of logs by level",
+  //     source = "level", // Campo do JSON para usar como label da métrica
+  //     config = {
+  //       action = "inc",
+  //       match_all = true, // Conta todos os logs que passam por este estágio
+  //       labels = { // Labels adicionais para a métrica
+  //         "level" = "level"
+  //       }
+  //     }
+  //   }
+  // }
+
+  forward_to = [loki.write.loki_destination.receiver] // Envia para o destino Loki
+}
+
+// Define o destino para onde os logs serão enviados (Loki)
+loki.write "loki_destination" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push" // URL do seu servidor Loki
+  }
+  // Opcional: se o Loki exigir autenticação
+  // basic_auth {
+  //   username = "seu_usuario_loki"
+  //   password = "sua_senha_loki"
+  // }
+}
+
+// Opcional: se você estiver usando o estágio de métricas e quiser enviá-las para o Prometheus/Mimir
+// prometheus.remote_write "mimir_destination" {
+//   endpoint {
+//     url = "http://mimir:9009/api/v1/push" // URL do seu Mimir/Prometheus
+//   }
+// }
