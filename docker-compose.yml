@@ -61,10 +61,6 @@ services:
         - "127.0.0.1:6379:6379"
       networks:
         - evolution-net
-      labels:
-      - "prometheus.scrape=true"
-      - "prometheus.port=6379"
-      - "prometheus.path=/metrics"
 
   # --- SERVIÇO REDIS EXPORTER ---
   redis-exporter:
@@ -78,8 +74,8 @@ services:
     #  - '--redis.addr=redis://redis:6379'
     #  - '--redis.password=SUA_SENHA_REDIS_AQUI'
     # Alternativamente, usando variáveis de ambiente (verifique a documentação da imagem do exporter para suporte):
-    # environment:
-    #   REDIS_ADDR: "redis://redis:6379"
+    environment:
+      REDIS_ADDR: "redis://redis:6379"
     #   REDIS_PASSWORD: "SUA_SENHA_REDIS_AQUI" # Se houver senha
     ports:
       - "9121:9121" # Porta padrão do redis_exporter
