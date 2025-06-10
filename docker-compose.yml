@@ -262,6 +262,7 @@ services:
       - "prometheus.scrape=true"
       - "prometheus.port=8080"
       - "prometheus.path=/metrics"
+      
   node-exporter:
     image: prom/node-exporter:latest
     container_name: node-exporter
