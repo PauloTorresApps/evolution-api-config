@@ -85,6 +85,25 @@ services:
       - redis # Garante que o Redis seja iniciado antes
     restart: unless-stopped
 
+   # Serviço de restauração de backups
+   # Serviço de restauração de backups com PHP
+  # backup-restore:
+  #   build: ./backup-restore
+  #   environment:
+  #     PG_HOST: postgres
+  #     PG_USER: postgres
+  #     PG_PASSWORD: senhasegura
+  #     BACKUP_DIR: /backups
+  #   volumes:
+  #     - ./backups:/backups
+  #     - ./backup-restore/public:/var/www/html
+  #   ports:
+  #     - "8080:80"
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     - evolution-net
+
   postgres:
     container_name: postgres
     image: postgres:15
@@ -138,7 +157,10 @@ services:
    # --- SERVIÇO N8N ---
   
   n8n:
-    image: n8nio/n8n:latest # Use a imagem oficial e a tag desejada
+    # image: n8nio/n8n:latest # Use a imagem oficial e a tag desejada
+    build:
+      context: ./n8n
+      dockerfile: Dockerfile
     container_name: n8n
     ports:
       - "5678:5678" # Porta padrão do n8n. As métricas geralmente são expostas nesta mesma porta.
@@ -181,6 +203,7 @@ services:
       - EXECUTIONS_DATA_SAVE_ON_PROGRESS=true
       - EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS=true
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+
     volumes:
       - n8n_data:/home/node/.n8n # Volume para persistir dados do n8n
     networks:
