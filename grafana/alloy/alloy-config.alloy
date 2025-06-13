@@ -1,69 +1,130 @@
-// 1. Defina suas regras de relabeling em um componente 'prometheus.relabel'
-prometheus.relabel "docker_log_rules" {
-  forward_to = [] // Tenta lista vazia para o forward_to
-
-  rule {
-    source_labels = ["__meta_docker_container_name"]
-    regex         = "/(.*)"
-    target_label  = "container_name"
-  }
-  rule {
-    source_labels = ["__meta_docker_container_log_stream"]
-    target_label  = "logstream"
-  }
-  rule {
-    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
-    target_label  = "service_name"
-  }
-}
-
-// Configuração para coletar logs do Docker
-discovery.docker "docker_containers" {
-  host = "unix:///var/run/docker.sock"
-}
-
-// Recebe os logs dos containers descobertos
-loki.source.docker "app_logs" {
-  host = "unix:///var/run/docker.sock"
-  targets = discovery.docker.docker_containers.targets
-  forward_to = [loki.process.app_json.receiver]
-
-  labels = {
-    "job" = "node-app-logs",
-  }
-
-  relabel_rules = prometheus.relabel.docker_log_rules.rules
-}
-
-// Processa os logs JSON
-loki.process "app_json" {
-  stage.json {
-    expressions = {
-      "level"    = "level",
-      "time"     = "time",
-      "msg"      = "msg || message",
-      "hostname" = "hostname",
-      "pid"      = "pid",
-      "path"     = "path",
-      "method"   = "method",
-    }
-  }
-
-  stage.timestamp {
-    source = "time"
-    format = "unix_ms"
-  }
-
-  stage.output {
-    source = "msg"
-  }
-
-  forward_to = [loki.write.loki_destination.receiver]
-}
-
-// Define o destino para onde os logs serão enviados (Loki)
+// --- DESTINO FINAL ---
+// Todas as pipelines de processamento enviam seus logs para este componente de escrita.
 loki.write "loki_destination" {
   endpoint {
     url = "http://loki:3100/loki/api/v1/push"
   }
+}
+
+// --- DESCOBERTA E REGRAS DE ROTULAGEM (DOCKER) ---
+
+// Descoberta de todos os containers Docker em execução.
+discovery.docker "all_containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+// Componente dedicado para as regras de relabeling do Docker.
+// A fonte do Docker irá referenciar as regras exportadas daqui.
+prometheus.relabel "docker_relabeling" {
+  // O forward_to é necessário para que o componente seja válido,
+  // mas pode estar vazio, pois este componente apenas exporta suas 'rules'.
+  forward_to = []
+
+  // Extrai o nome do container, removendo a barra inicial (/) se existir.
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/?(.*)"
+    target_label  = "container"
+  }
+  // Extrai o stream do log (stdout ou stderr).
+  rule {
+    source_labels = ["__meta_docker_container_log_stream"]
+    target_label  = "logstream"
+  }
+  // Extrai o nome do serviço definido no docker-compose.
+  // Essencial para o roteamento dos logs.
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+}
+
+// --- PROCESSADORES DE LOG (PIPELINES) ---
+
+// Processador 1: Para logs no formato JSON da aplicação.
+loki.process "app_json_parser" {
+  stage.json {
+    expressions = {
+      level    = "level",
+      time     = "time",
+      msg      = "msg || message",
+      hostname = "hostname",
+    }
+  }
+  stage.timestamp {
+    source            = "time"
+    format            = "unix_ms"
+    action_on_failure = "fudge"
+  }
+  stage.labels {
+    values = {
+      level = "level",
+    }
+  }
+  stage.output {
+    source = "msg"
+  }
+  forward_to = [loki.write.loki_destination.receiver]
+}
+
+// Processador 2: Para logs de acesso do NGINX (reutilizável).
+loki.process "nginx_access_log_parser" {
+  stage.regex {
+    expression = `%{COMMONAPACHELOG}`
+  }
+  // Este estágio cria labels a partir dos dados extraídos pelo Grok.
+  stage.labels {
+    values = {
+      status_code = "response",
+      method      = "verb",
+    }
+  }
+  forward_to = [loki.write.loki_destination.receiver]
+}
+
+// --- FONTES E ROTEAMENTO ---
+
+// FONTE 1: Arquivos de log do NGINX
+loki.source.file "nginx_file_source" {
+  targets    = [{ "__path__" = "/var/log/nginx/custom_access.log", "job" = "integrations/nginx_file", "color" = "grey" }]
+  forward_to = [loki.process.nginx_access_log_parser.receiver]
+}
+
+// FONTE 2: Logs de todos os containers Docker
+loki.source.docker "all_docker_source" {
+  host    = "unix:///var/run/docker.sock"
+  targets = discovery.docker.all_containers.targets
+
+  relabel_rules = prometheus.relabel.docker_relabeling.rules
+
+  // Envia todos os logs do docker para os roteadores.
+  // Cada roteador irá filtrar e encaminhar para o processador correto.
+  forward_to = [
+    loki.relabel.app_router.receiver,
+    loki.relabel.nginx_router.receiver,
+  ]
+}
+
+// ROTEADOR 1: Roteia logs da aplicação (JSON)
+loki.relabel "app_router" {
+  // Regra: MANTÉM o log APENAS SE o label 'service' for 'node-app'.
+  rule {
+    source_labels = ["service"]
+    regex         = "node-app" // Altere para o nome do seu serviço de aplicação
+    action        = "keep"
+  }
+  // Encaminha os logs que passaram no filtro para o parser de JSON.
+  forward_to = [loki.process.app_json_parser.receiver]
+}
+
+// ROTEADOR 2: Roteia logs do NGINX
+loki.relabel "nginx_router" {
+  // Regra: MANTÉM o log APENAS SE o label 'service' for 'nginx'.
+  rule {
+    source_labels = ["service"]
+    regex         = "nginx"
+    action        = "keep"
+  }
+  // Encaminha os logs que passaram no filtro para o parser do NGINX.
+  forward_to = [loki.process.nginx_access_log_parser.receiver]
 }

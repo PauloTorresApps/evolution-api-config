@@ -8,6 +8,7 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./nginx/logs:/var/log/nginx
       - ./certificado:/etc/nginx/ssl
+      - nginx-logs:/var/log/nginx
     ports:
       - "80:80"
       - "443:443"
@@ -334,9 +335,11 @@ services:
 
   grafana-alloy:
     image: grafana/alloy:v1.0.0 # Use uma versão recente do Alloy
+    container_name: grafana-alloy
     volumes:
       - ./grafana/alloy/alloy-config.alloy:/etc/alloy/config.alloy # Mapeia seu arquivo de configuração
       - /var/run/docker.sock:/var/run/docker.sock:ro # Monta o socket do Docker (read-only)
+      - nginx-logs:/var/log/nginx:ro
     ports:
       - "12345:12345" # Porta do Alloy, se configurada
     depends_on:
@@ -345,6 +348,8 @@ services:
     command:
       - "run"
       - "/etc/alloy/config.alloy"
+      - "--storage.path=/var/lib/alloy" # Local para o Alloy guardar dados operacionais DENTRO do contêiner (opcional para este caso simples, mas boa prática)
+
       # Adicione flags de logging do Alloy se necessário, ex: --server.log.level=debug
     networks:
       - evolution-net
@@ -357,6 +362,7 @@ volumes:
   prometheus-data:
   n8n_data:
   loki_data:
+  nginx-logs:
 
 networks:
   evolution-net:
