@@ -38,7 +38,7 @@ services:
 
   evolution-api:
     container_name: evolution_api
-    image: atendai/evolution-api
+    image: atendai/evolution-api:latest
     networks:
       - evolution-net
     restart: always
@@ -100,6 +100,7 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - postgres_data_dev:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
       - "5432:5432"
     healthcheck:
@@ -155,7 +156,7 @@ services:
       - N8N_METRICS_PATH="/metrics" # (este é o padrão)
       - N8N_METRICS_INCLUDE_WORKFLOW_METRICS=true
       # Outras variáveis de ambiente necessárias para o n8n (ex: fuso horário, banco de dados, etc.)
-      - N8N_HOST=n8n
+      - N8N_HOST=n8n/
       - N8N_PORT=5678
       - N8N_PROTOCOL=http
       - N8N_WEBHOOK_URL=${N8N_WEBHOOK_URL}
@@ -329,6 +330,7 @@ volumes:
   evolution_instances:
   evolution_redis_dev:
   postgres_data_dev:
+    external: true
   grafana_data:
   prometheus-data:
   n8n_data:
