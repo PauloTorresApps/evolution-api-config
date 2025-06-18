@@ -8,6 +8,7 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./nginx/logs:/var/log/nginx
       - ./certificado:/etc/nginx/ssl
+      - nginx-logs:/var/log/nginx
     ports:
       - "80:80"
       - "443:443"
@@ -85,6 +86,25 @@ services:
       - redis # Garante que o Redis seja iniciado antes
     restart: unless-stopped
 
+   # Serviço de restauração de backups
+   # Serviço de restauração de backups com PHP
+  # backup-restore:
+  #   build: ./backup-restore
+  #   environment:
+  #     PG_HOST: postgres
+  #     PG_USER: postgres
+  #     PG_PASSWORD: senhasegura
+  #     BACKUP_DIR: /backups
+  #   volumes:
+  #     - ./backups:/backups
+  #     - ./backup-restore/public:/var/www/html
+  #   ports:
+  #     - "8080:80"
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     - evolution-net
+
   postgres:
     container_name: postgres
     image: postgres:15
@@ -139,7 +159,10 @@ services:
    # --- SERVIÇO N8N ---
   
   n8n:
-    image: n8nio/n8n:latest # Use a imagem oficial e a tag desejada
+    # image: n8nio/n8n:latest # Use a imagem oficial e a tag desejada
+    build:
+      context: ./n8n
+      dockerfile: Dockerfile
     container_name: n8n
     ports:
       - "5678:5678" # Porta padrão do n8n. As métricas geralmente são expostas nesta mesma porta.
@@ -182,6 +205,7 @@ services:
       - EXECUTIONS_DATA_SAVE_ON_PROGRESS=true
       - EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS=true
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+
     volumes:
       - n8n_data:/home/node/.n8n # Volume para persistir dados do n8n
     networks:
@@ -263,6 +287,7 @@ services:
       - "prometheus.scrape=true"
       - "prometheus.port=8080"
       - "prometheus.path=/metrics"
+      
   node-exporter:
     image: prom/node-exporter:latest
     container_name: node-exporter
@@ -311,9 +336,11 @@ services:
 
   grafana-alloy:
     image: grafana/alloy:v1.0.0 # Use uma versão recente do Alloy
+    container_name: grafana-alloy
     volumes:
       - ./grafana/alloy/alloy-config.alloy:/etc/alloy/config.alloy # Mapeia seu arquivo de configuração
       - /var/run/docker.sock:/var/run/docker.sock:ro # Monta o socket do Docker (read-only)
+      - nginx-logs:/var/log/nginx:ro
     ports:
       - "12345:12345" # Porta do Alloy, se configurada
     depends_on:
@@ -322,6 +349,8 @@ services:
     command:
       - "run"
       - "/etc/alloy/config.alloy"
+      - "--storage.path=/var/lib/alloy" # Local para o Alloy guardar dados operacionais DENTRO do contêiner (opcional para este caso simples, mas boa prática)
+
       # Adicione flags de logging do Alloy se necessário, ex: --server.log.level=debug
     networks:
       - evolution-net
@@ -335,6 +364,7 @@ volumes:
   prometheus-data:
   n8n_data:
   loki_data:
+  nginx-logs:
 
 networks:
   evolution-net:
