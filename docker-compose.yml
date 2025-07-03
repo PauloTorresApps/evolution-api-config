@@ -159,10 +159,10 @@ services:
    # --- SERVIÇO N8N ---
   
   n8n:
-    # image: n8nio/n8n:latest # Use a imagem oficial e a tag desejada
-    build:
-      context: ./n8n
-      dockerfile: Dockerfile
+    image: n8nio/n8n:latest # Use a imagem oficial e a tag desejada
+    # build:
+    #   context: ./n8n
+    #   dockerfile: Dockerfile
     container_name: n8n
     ports:
       - "5678:5678" # Porta padrão do n8n. As métricas geralmente são expostas nesta mesma porta.
@@ -187,6 +187,7 @@ services:
       - N8N_ENDPOINT_WEBHOOK=webhook
       - N8N_ENDPOINT_WEBHOOK_TEST=webhook-test
       - N8N_RUNNERS_ENABLED=true
+      - N8N_EXPRESS_TRUST_PROXY=true
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_HOST=postgres
       - DB_POSTGRESDB_PORT=5432
